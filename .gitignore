@@ -122,6 +122,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/docs
 
 # mypy
 .mypy_cache/
@@ -136,3 +137,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Trac2MkDocs
+authors.txt*
