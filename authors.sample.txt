@@ -1,0 +1,2 @@
+trac = Trac admin <trac@example.com>
+root = Administrator <root@example.com>

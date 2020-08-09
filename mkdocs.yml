@@ -1,0 +1,8 @@
+#
+# Sample mkdocs.yml file 
+#
+#   pip install mkdocs
+#   mkdocs serve
+#
+site_name: Convert from Trac Wiki
+theme: readthedocs
