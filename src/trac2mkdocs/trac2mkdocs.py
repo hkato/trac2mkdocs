@@ -8,7 +8,7 @@ from shutil import copy
 
 from git import Actor, Repo
 
-from tracboat import trac2down
+from . import trac2down
 
 TRAC_DB_PATH = 'db/trac.db'
 ATTACHMENTS_PATH = 'files/attachments/wiki'
@@ -81,12 +81,13 @@ REPLACE_PAGES = {
 }
 
 
-class Trac2Markdown():
+class Trac2MkDocs():
 
     def __init__(self, project_path, pages_path, author_file):
         self.project_path = project_path
         self.pages_path = pages_path
-        self.conn = sqlite3.connect(path.join(self.project_path, TRAC_DB_PATH))
+        self.author_file = author_file
+        self.conn = sqlite3.connect(path.join(project_path, TRAC_DB_PATH))
         self.authors = dict()
         self.__create_commit_list()
         if (self.__create_author_file(author_file)):
@@ -98,7 +99,7 @@ class Trac2Markdown():
         image_path = path.join(self.pages_path, IMAGE_PATH)
         makedirs(image_path, exist_ok=True)
 
-        trac2md.__get_authors(author_file)
+        self.__get_authors(self.author_file)
         repo = Repo.init(self.pages_path)
 
         cursor = self.conn.cursor()
@@ -229,7 +230,7 @@ class Trac2Markdown():
         return content
 
 
-if __name__ == '__main__':
+def cli():
     parser = argparse.ArgumentParser(description='Trac wiki to Markdown pages')
     parser.add_argument('project_path', help='Trac project path')
     parser.add_argument('--pages_path', default='./docs',
@@ -241,5 +242,5 @@ if __name__ == '__main__':
     pages_path = args.pages_path
     author_file = args.author_file
 
-    trac2md = Trac2Markdown(project_path, pages_path, author_file)
-    trac2md.convert()
+    trac2mkdocs = Trac2MkDocs(project_path, pages_path, author_file)
+    trac2mkdocs.convert()
