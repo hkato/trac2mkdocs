@@ -6,6 +6,7 @@ from hashlib import sha1
 from os import makedirs, path
 from shutil import copy
 
+import git
 from git import Actor, Repo
 
 from . import trac2down
@@ -13,6 +14,7 @@ from . import trac2down
 TRAC_DB_PATH = 'db/trac.db'
 ATTACHMENTS_PATH = 'files/attachments/wiki'
 TRAC2DOWN_UPLOADS = '/uploads/migrated'
+PAGES_PATH = 'docs'
 IMAGE_PATH = 'images'
 EXCLUDE_PAGES = [
     'CamelCase',
@@ -83,9 +85,10 @@ REPLACE_PAGES = {
 
 class Trac2MkDocs():
 
-    def __init__(self, project_path, pages_path, author_file):
+    def __init__(self, project_path, mkdocs_path, author_file):
         self.project_path = project_path
-        self.pages_path = pages_path
+        self.mkdocs_path = mkdocs_path
+        self.pages_path = path.join(mkdocs_path, PAGES_PATH)
         self.author_file = author_file
         self.conn = sqlite3.connect(path.join(project_path, TRAC_DB_PATH))
         self.authors = dict()
@@ -100,7 +103,12 @@ class Trac2MkDocs():
         makedirs(image_path, exist_ok=True)
 
         self.__get_authors(self.author_file)
-        repo = Repo.init(self.pages_path)
+
+        try:
+            repo = Repo(self.mkdocs_path)
+        except git.exc.InvalidGitRepositoryError:
+            print('git init')
+            repo = Repo.init(self.mkdocs_path)
 
         cursor = self.conn.cursor()
         contents = cursor.execute(
@@ -138,7 +146,7 @@ class Trac2MkDocs():
                         message = 'Add version {1}'.format(name, version)
                     else:
                         message = 'Update version {1}'.format(name, version)
-                    repo.index.add(filename)
+                    repo.index.add(path.join(PAGES_PATH, filename))
                     print(commit_date, login, name, message)
                     repo.index.commit(message, author=author,
                                       commit_date=commit_date, author_date=commit_date)
@@ -154,7 +162,7 @@ class Trac2MkDocs():
                 message = 'Upload attachment'
                 try:
                     copy(attachment_path, path.join(image_path, filename))
-                    repo.index.add(IMAGE_PATH)
+                    repo.index.add(path.join(PAGES_PATH, IMAGE_PATH))
                 except FileNotFoundError:
                     pass
                 print(commit_date, login, filename, message)
@@ -233,14 +241,14 @@ class Trac2MkDocs():
 def cli():
     parser = argparse.ArgumentParser(description='Trac wiki to Markdown pages')
     parser.add_argument('project_path', help='Trac project path')
-    parser.add_argument('--pages_path', default='./docs',
-                        help='Markdown pages path')
+    parser.add_argument('--mkdocs_path', default='.',
+                        help='MkDocs Markdown pages path')
     parser.add_argument('--author-file', default='./authors.txt',
                         help='Author file same as git-svn')
     args = parser.parse_args()
     project_path = args.project_path
-    pages_path = args.pages_path
+    mkdocs_path = args.mkdocs_path
     author_file = args.author_file
 
-    trac2mkdocs = Trac2MkDocs(project_path, pages_path, author_file)
+    trac2mkdocs = Trac2MkDocs(project_path, mkdocs_path, author_file)
     trac2mkdocs.convert()
