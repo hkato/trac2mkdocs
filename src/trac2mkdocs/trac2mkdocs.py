@@ -233,9 +233,27 @@ class Trac2MkDocs():
     def __mkdocs_convert(self, content):
         content = re.sub(r'(.*?)(' + re.escape(TRAC2DOWN_UPLOADS) + r')(.*?)',
                          r'\1' + re.escape(IMAGE_PATH) + r'\3', content)
-        content = re.sub(r'\[\[(.*?)\]\]', r'[\1](../\1)', content)
+        content = re.sub(r'\[\[(.*?)\]\]', r'[\1](\1.md)', content)
 
         return content
+
+    def create_mkdocs_yaml(self):
+        with open(path.join(self.mkdocs_path, 'mkdocs.yml'), 'w') as f:
+            f.writelines([
+                'site_name: Convert from Trac Wiki\n',
+                'theme: readthedocs\n',
+                '#nav:\n',
+                '#  - Home: index.md\n'])
+            cursor = self.conn.cursor()
+            contents = cursor.execute(
+                'SELECT DISTINCT name FROM wiki ORDER BY name ASC;').fetchall()
+            for content in contents:
+                name = content[0]
+                if name not in EXCLUDE_PAGES:
+                    if name in REPLACE_PAGES:
+                        name = REPLACE_PAGES.get(name)
+                    if name != 'index':
+                        f.write('#  - {0}: {0}.md\n'.format(name))
 
 
 def cli():
@@ -252,3 +270,4 @@ def cli():
 
     trac2mkdocs = Trac2MkDocs(project_path, mkdocs_path, author_file)
     trac2mkdocs.convert()
+    trac2mkdocs.create_mkdocs_yaml()
